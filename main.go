@@ -20,21 +20,32 @@ func checkIsBranchExists(branchName string) bool {
 	return len(result.String()) > 0
 }
 
-func getLastVersion() (string, error) {
-	var lastTag, errBuffer bytes.Buffer
-	cmd := exec.Command("git", "describe", "--abbrev=0")
-	cmd.Stdout = &lastTag
-	cmd.Stderr = &errBuffer
+func execCommand(command string) (string, error) {
+	var stdOutBuff, stdErrBuff bytes.Buffer
+	cmdParts := strings.Split(command, " ")
+	cmd := exec.Command(cmdParts[0], cmdParts[1:]...)
+	cmd.Stdout = &stdOutBuff
+	cmd.Stderr = &stdErrBuff
 	err := cmd.Run()
 	if err != nil {
-		return "", errors.New(errBuffer.String())
+		return "", errors.New(stdErrBuff.String())
 	}
-	return lastTag.String(), nil
+
+	return stdOutBuff.String(), nil
+}
+
+func getLastVersion() (string, error) {
+	lastTag, err := execCommand("git describe --abbrev=0")
+	if err != nil {
+		return "", err
+	}
+	return lastTag, nil
 }
 
 func getNextReleaseNumber() (string, error) {
 	lastTag, err := getLastVersion()
 	if err != nil {
+		fmt.Println(err)
 		return "", err
 	}
 
@@ -67,8 +78,6 @@ func main() {
 		log.Fatal("empty gitflow action")
 	}
 
-	var errBuffer bytes.Buffer
-
 	newVersion, err := getNextReleaseNumber()
 	if err != nil {
 		log.Fatal(err)
@@ -79,17 +88,11 @@ func main() {
 		fallthrough
 	case "release":
 		gitflowCommandBuffer := fmt.Sprintf("git flow %s start %s", os.Args[1], newVersion)
-		parts := strings.Split(gitflowCommandBuffer, " ")
-
-		var gitflowResult bytes.Buffer
-		gitflowCmd := exec.Command(parts[0], parts[1:]...)
-		gitflowCmd.Stdout = &gitflowResult
-		gitflowCmd.Stderr = &errBuffer
-		err = gitflowCmd.Run()
+		gitflowResult, err := execCommand(gitflowCommandBuffer)
 		if err != nil {
-			log.Fatal(errBuffer.String())
+			log.Fatal(err)
 		}
-		fmt.Println(gitflowResult.String())
+		fmt.Println(gitflowResult)
 		break
 	default:
 		log.Fatal("unknown gitflow action")
