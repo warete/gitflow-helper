@@ -77,16 +77,14 @@ func main() {
 	if len(os.Args) < 2 {
 		log.Fatal("empty gitflow action")
 	}
-
-	newVersion, err := getNextReleaseNumber()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	switch os.Args[1] {
 	case "hotfix":
 		fallthrough
 	case "release":
+		newVersion, err := getNextReleaseNumber()
+		if err != nil {
+			log.Fatal(err)
+		}
 		gitflowCommandBuffer := fmt.Sprintf("git flow %s start %s", os.Args[1], newVersion)
 		gitflowResult, err := execCommand(gitflowCommandBuffer)
 		if err != nil {
