@@ -45,8 +45,7 @@ func getLastVersion() (string, error) {
 func getNextReleaseNumber() (string, error) {
 	lastTag, err := getLastVersion()
 	if err != nil {
-		fmt.Println(err)
-		return "", err
+		lastTag = ""
 	}
 
 	lastTagParts := strings.Split(lastTag, ".")
@@ -54,7 +53,7 @@ func getNextReleaseNumber() (string, error) {
 	currentDate := time.Now().Format("2006.01.02")
 
 	nextReleaseNumber := 0
-	if currentDate == strings.Join(lastTagParts[:3], ".") {
+	if len(lastTagParts) > 1 && currentDate == strings.Join(lastTagParts[:3], ".") {
 		if lastTagParts[3][0] == '0' {
 			nextReleaseNumber, _ = strconv.Atoi(string(lastTagParts[3][1]))
 		} else {
@@ -73,6 +72,30 @@ func getNextReleaseNumber() (string, error) {
 	return newVersion, nil
 }
 
+func startGitflowReleaseAction(action string) (string, string, error) {
+	newVersion, err := getNextReleaseNumber()
+	if err != nil {
+		return "", "", err
+	}
+	gitflowCommandBuffer := fmt.Sprintf("git flow %s start %s", action, newVersion)
+	gitflowResult, err := execCommand(gitflowCommandBuffer)
+	if err != nil {
+		return "", "", err
+	}
+
+	return gitflowResult, newVersion, nil
+}
+
+func finishGitflowAction(action string, version string) (string, error) {
+	gitflowCommandBuffer := fmt.Sprintf("git flow %s finish %s -m \"Tagging version %s\"", action, version, version)
+	gitflowResult, err := execCommand(gitflowCommandBuffer)
+	if err != nil {
+		return "", err
+	}
+
+	return gitflowResult, nil
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		log.Fatal("empty gitflow action")
@@ -81,17 +104,27 @@ func main() {
 	case "hotfix":
 		fallthrough
 	case "release":
-		newVersion, err := getNextReleaseNumber()
-		if err != nil {
-			log.Fatal(err)
-		}
-		gitflowCommandBuffer := fmt.Sprintf("git flow %s start %s", os.Args[1], newVersion)
-		gitflowResult, err := execCommand(gitflowCommandBuffer)
+		gitflowResult, _, err := startGitflowReleaseAction(os.Args[1])
 		if err != nil {
 			log.Fatal(err)
 		}
 		fmt.Println(gitflowResult)
 		break
+	case "fast_release":
+		gitflowResult, newVersion, err := startGitflowReleaseAction("hotfix")
+		if err != nil {
+			log.Fatal(err, err.Error())
+		}
+		fmt.Println(gitflowResult)
+		gitflowResult, err = finishGitflowAction("hotfix", newVersion)
+		fmt.Println(gitflowResult)
+		gitflowResult, newVersion, err = startGitflowReleaseAction("release")
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(gitflowResult)
+		gitflowResult, err = finishGitflowAction("release", newVersion)
+		fmt.Println(gitflowResult)
 	default:
 		log.Fatal("unknown gitflow action")
 	}
