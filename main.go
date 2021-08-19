@@ -59,7 +59,7 @@ func getNextReleaseNumber() (string, error) {
 		if lastTagParts[3][0] == '0' {
 			nextReleaseNumber, _ = strconv.Atoi(string(lastTagParts[3][1]))
 		} else {
-			nextReleaseNumber, _ = strconv.Atoi(lastTagParts[3])
+			nextReleaseNumber, _ = strconv.Atoi(lastTagParts[3][:len(lastTagParts[3])-1])
 		}
 	}
 	var newVersion string
