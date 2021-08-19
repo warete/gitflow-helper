@@ -100,6 +100,12 @@ func main() {
 	if len(os.Args) < 2 {
 		log.Fatal("empty gitflow action")
 	}
+
+	_, err := execCommand("git fetch origin")
+	if err != nil {
+		log.Println(err)
+	}
+
 	switch os.Args[1] {
 	case "hotfix":
 		fallthrough
@@ -108,23 +114,23 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(gitflowResult)
+		log.Println(gitflowResult)
 		break
 	case "fast_release":
 		gitflowResult, newVersion, err := startGitflowReleaseAction("hotfix")
 		if err != nil {
 			log.Fatal(err, err.Error())
 		}
-		fmt.Println(gitflowResult)
+		log.Println(gitflowResult)
 		gitflowResult, err = finishGitflowAction("hotfix", newVersion)
-		fmt.Println(gitflowResult)
+		log.Println(gitflowResult)
 		gitflowResult, newVersion, err = startGitflowReleaseAction("release")
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(gitflowResult)
+		log.Println(gitflowResult)
 		gitflowResult, err = finishGitflowAction("release", newVersion)
-		fmt.Println(gitflowResult)
+		log.Println(gitflowResult)
 	default:
 		log.Fatal("unknown gitflow action")
 	}
