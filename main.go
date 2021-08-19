@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/fatih/color"
 )
 
 func checkIsBranchExists(branchName string) bool {
@@ -101,9 +103,13 @@ func main() {
 		log.Fatal("empty gitflow action")
 	}
 
+	log.SetOutput(color.Output)
+	red := color.New(color.FgRed).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+
 	_, err := execCommand("git fetch origin")
 	if err != nil {
-		log.Println(err)
+		log.Println(red(err))
 	}
 
 	switch os.Args[1] {
@@ -112,25 +118,25 @@ func main() {
 	case "release":
 		gitflowResult, _, err := startGitflowReleaseAction(os.Args[1])
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal(red(err))
 		}
-		log.Println(gitflowResult)
+		log.Println(green(gitflowResult))
 		break
 	case "fast_release":
 		gitflowResult, newVersion, err := startGitflowReleaseAction("hotfix")
 		if err != nil {
-			log.Fatal(err, err.Error())
+			log.Fatal(red(err), err.Error())
 		}
-		log.Println(gitflowResult)
+		log.Println(green(gitflowResult))
 		gitflowResult, err = finishGitflowAction("hotfix", newVersion)
-		log.Println(gitflowResult)
+		log.Println(green(gitflowResult))
 		gitflowResult, newVersion, err = startGitflowReleaseAction("release")
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal(red(err))
 		}
-		log.Println(gitflowResult)
+		log.Println(green(gitflowResult))
 		gitflowResult, err = finishGitflowAction("release", newVersion)
-		log.Println(gitflowResult)
+		log.Println(green(gitflowResult))
 	default:
 		log.Fatal("unknown gitflow action")
 	}
