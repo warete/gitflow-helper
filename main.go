@@ -137,6 +137,38 @@ func main() {
 		log.Println(green(gitflowResult))
 		gitflowResult, err = finishGitflowAction("release", newVersion)
 		log.Println(green(gitflowResult))
+	case "merge_cur_to_stage":
+		log.Println("start check exists feature/stage branch")
+		checkBranchResult, err := execCommand("git branch --list feature/stage")
+		if err != nil {
+			log.Fatal(red(err))
+		}
+		if len(checkBranchResult) == 0 {
+			log.Fatal(red("branch feature/stage does not exist"))
+		} else {
+			log.Println(green("branch feature/stage exists"))
+		}
+
+		log.Println("start getting current branch name")
+		currentBranchName, err := execCommand("git branch --show-current")
+		if err != nil {
+			log.Fatal(red(err))
+		}
+		currentBranchName = currentBranchName[:len(currentBranchName)-1]
+		log.Println(green("current branch name: " + currentBranchName))
+		log.Println("git checkout feature/stage")
+		_, err = execCommand("git checkout feature/stage")
+		if err != nil {
+			log.Fatal(red(err))
+		}
+		log.Println(fmt.Sprintf("git merge %s", currentBranchName))
+		mergeResult, err := execCommand(fmt.Sprintf("git merge %s", currentBranchName))
+		if err != nil {
+			_, err = execCommand("git checkout " + currentBranchName)
+			log.Fatal(red(err))
+		}
+		log.Println(green(mergeResult))
+		_, err = execCommand("git checkout " + currentBranchName)
 	default:
 		log.Fatal("unknown gitflow action")
 	}
